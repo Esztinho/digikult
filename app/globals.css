@@ -1,3 +1,5 @@
+@import "./dummy.css";
+
 @import "tailwindcss";
 @source "../components";
 @source "../app";
