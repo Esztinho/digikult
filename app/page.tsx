@@ -75,29 +75,40 @@ export default function HomePage() {
 
       {user && (
         <div className="flex flex-wrap gap-3 mb-8">
+          {/* All tasks gomb */}
           <button 
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-zinc-900 text-muted-foreground hover:bg-zinc-800'
+              filter === 'all' 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             }`}
           >
             All tasks
           </button>
+          
+          {/* Unsolved gomb */}
           <button 
             onClick={() => setFilter('unsolved')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === 'unsolved' ? 'bg-primary text-primary-foreground' : 'bg-zinc-900 text-muted-foreground hover:bg-zinc-800'
+              filter === 'unsolved' 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             }`}
           >
             Unsolved
           </button>
+          
+          {/* Solved gomb */}
           <button 
             onClick={() => setFilter('solved')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
-              filter === 'solved' ? 'bg-green-600 text-white' : 'bg-zinc-900 text-muted-foreground hover:bg-zinc-800'
+              filter === 'solved' 
+                ? 'bg-success text-success-foreground' 
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             }`}
           >
-            Solved <span className={filter === 'solved' ? 'text-white' : 'text-green-500'}>✓</span>
+            Solved <span className={filter === 'solved' ? 'text-success-foreground' : 'text-success'}>✓</span>
           </button>
         </div>
       )}
@@ -109,8 +120,8 @@ export default function HomePage() {
           return (
             <Link href={`/feladat/${q.id}`} key={q.id}>
               <div className={`p-6 rounded-xl border transition-all hover:-translate-y-1 hover:shadow-lg h-full flex flex-col relative ${
-                isSolved ? 'bg-zinc-900/50 border-green-900/50 hover:border-green-700/80' : 'bg-zinc-950 border-border hover:border-primary/50'
-              }`}>
+  isSolved ? 'bg-zinc-900/50 border-green-900/50 hover:border-green-700/80' : 'bg-zinc-900/40 border-zinc-800 hover:border-primary/50'
+}`}>
                 
                 {isSolved && (
                   <div className="absolute -top-3 -right-3 bg-green-500 text-black w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md border-2 border-zinc-950">
