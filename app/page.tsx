@@ -16,6 +16,8 @@ export default function HomePage() {
   const [user, setUser] = useState<any>(null)
   
   const [filter, setFilter] = useState<'all' | 'solved' | 'unsolved'>('all')
+  const [selectedLevel, setSelectedLevel] = useState<string>('KÖZÉP') // Alapból a középszint
+  const [selectedTopic, setSelectedTopic] = useState<string>('ALL') 
 
   useEffect(() => {
     async function fetchData() {
@@ -49,15 +51,23 @@ export default function HomePage() {
   }
 
   const filteredQuestions = questions.filter(q => {
+    const matchesLevel = q.level === selectedLevel
+
+    const matchesTopic = selectedTopic === 'ALL' || q.topic === selectedTopic
+
     const isSolved = solvedIds.has(q.id)
-    if (filter === 'solved') return isSolved
-    if (filter === 'unsolved') return !isSolved
-    return true
+    const matchesStatus = 
+      filter === 'all' || 
+      (filter === 'solved' && isSolved) || 
+      (filter === 'unsolved' && !isSolved)
+
+    return matchesLevel && matchesTopic && matchesStatus
   })
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen">
-      <div className="flex justify-between items-center mb-10">
+      {/* 1. FEJLÉC: Cím és Login adatok */}
+      <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold">Python Tasks</h1>
         
         {user ? (
@@ -73,7 +83,66 @@ export default function HomePage() {
         )}
       </div>
 
+      {/* 2. SZINT VÁLASZTÓ GOMBOK (Közép / Emelt) */}
+      <div className="flex gap-3 mb-4">
+        <button 
+          onClick={() => setSelectedLevel('KÖZÉP')}
+          className={`px-5 py-2 rounded-xl font-bold transition-all ${
+            selectedLevel === 'KÖZÉP' 
+              ? 'bg-blue-600 text-white shadow-lg' 
+              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+          }`}
+        >
+          Közép szint
+        </button>
+        <button 
+          onClick={() => setSelectedLevel('EMELT')}
+          className={`px-5 py-2 rounded-xl font-bold transition-all ${
+            selectedLevel === 'EMELT' 
+              ? 'bg-purple-600 text-white shadow-lg' 
+              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+          }`}
+        >
+          Emelt szint
+        </button>
+      </div>
+
+      {/* 3. KATEGÓRIA VÁLASZTÓ GOMBOK (Topic-ok) */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button 
+          onClick={() => setSelectedTopic('ALL')}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            selectedTopic === 'ALL' 
+              ? 'bg-accent text-accent-foreground' 
+              : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+          }`}
+        >
+          Összes kategória
+        </button>
+        <button 
+          onClick={() => setSelectedTopic('PYTHON_ALAPOK')}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            selectedTopic === 'PYTHON_ALAPOK' 
+              ? 'bg-accent text-accent-foreground' 
+              : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+          }`}
+        >
+          Python alapok
+        </button>
+        <button 
+          onClick={() => setSelectedTopic('ALAP_ALGORITMUSOK')}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            selectedTopic === 'ALAP_ALGORITMUSOK' 
+              ? 'bg-accent text-accent-foreground' 
+              : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+          }`}
+        >
+          Alap algoritmusok
+        </button>
+      </div>
+
       {user && (
+        
         <div className="flex flex-wrap gap-3 mb-8">
           {/* All tasks gomb */}
           <button 

@@ -1,15 +1,24 @@
 'use client'
 
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { useEffect, useState, use } from 'react'
-import Editor from '@monaco-editor/react'
 import Script from 'next/script'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import dynamic from 'next/dynamic'
+
+// Dinamikusan töltjük be a Monacót, letiltva az SSR-t (szerveroldali renderelést)
+const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
+
+// --- BEMENETI MEMÓRIA A PYODIDE-HOZ ---
+let inputHistory: string[] = []
+let isRunningCorrectCode = false
+let historyIndex = 0
+
+ const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
 export default function TaskPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -27,18 +36,26 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
 
   useEffect(() => {
     async function fetchData() {
-      const { data: qData } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('id', id)
-        .single()
-      
-      setQuestion(qData)
 
-      const { data: authData } = await supabase.auth.getUser()
-      setUser(authData.user)
+      try { // <-- TETTÜNK IDE EGY TRY-T
+        const { data: qData } = await supabase
+          .from('questions')
+          .select('*')
+          .eq('id', id)
+          .single()
+        
+        setQuestion(qData)
 
-      setIsLoading(false)
+        const { data: authData } = await supabase.auth.getUser()
+        setUser(authData.user)
+
+        // Ellenőrizd: Biztosan létezik a fájl tetején a 'setIsLoading' függvényed?
+        setIsLoading(false) 
+        
+      } catch (err: any) {
+        // EZ A SOR AZONNAL KIBUKTATJA A REJTETT HIBÁT!
+        alert("🚨 BUMM! Itt a rejtett hiba a betöltéskor: " + err.message)
+      }
     }
     
     fetchData()
@@ -80,6 +97,10 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
     setIsChecking(true)
     setFeedback(null)
 
+// 1. ELŐKÉSZÜLET: Nullázzuk a memóriát, jelezzük, hogy most a diák kódja jön!
+    inputHistory = []
+    isRunningCorrectCode = false
+
     try {
       await pyodide.runPythonAsync(`
 import sys
@@ -90,6 +111,9 @@ sys.stderr = io.StringIO()
 
       try {
         await pyodide.runPythonAsync(userCode)
+        // Átkapcsoljuk a rendszert "lejátszó" módba!
+        isRunningCorrectCode = true
+        historyIndex = 0
       } catch (err: any) {
         setFeedback({ type: 'error', message: `Error in code:\n${err.message}` })
         setIsChecking(false)
@@ -138,12 +162,39 @@ sys.stdout = io.StringIO()
     <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen flex flex-col">
       <Script 
         src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js" 
-        onLoad={async () => {
-          const py = await (window as any).loadPyodide({
-            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
-          })
-          setPyodide(py)
-          setIsPyodideLoading(false)
+        strategy="afterInteractive"
+        // 1. Levettük az 'async' szót innen:
+        onReady={() => {
+          if (pyodide) return; 
+
+          // 2. Készítünk egy belső aszinkron függvényt:
+          const initPyodide = async () => {
+            try {
+              const py = await (window as any).loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/",
+                stdin: () => {
+                  if (isRunningCorrectCode) {
+                    const val = historyIndex < inputHistory.length ? inputHistory[historyIndex] : ""
+                    historyIndex++
+                    return val + "\n"
+                  } else {
+                    const val = window.prompt("Kérem az adatot (input):")
+                    const finalVal = val === null ? "" : val
+                    inputHistory.push(finalVal)
+                    return finalVal + "\n"
+                  }
+                }
+              })
+              setPyodide(py)
+              setIsPyodideLoading(false)
+            } catch (err: any) {
+              console.error("🚨 Pyodide letöltési hiba:", err)
+              alert("Nem sikerült letölteni a Python motort. Ellenőrizd a konzolt (F12)!")
+            }
+          }
+
+          // 3. Meghívjuk a belső függvényt:
+          initPyodide()
         }} 
       />
 
