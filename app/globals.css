@@ -123,3 +123,35 @@
     @apply font-sans;
     }
 }
+
+@layer components {
+  /* Alap stílus minden kategória gombnak */
+  .topic-btn {
+    @apply px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 border;
+  }
+
+  /* Kiválasztott (aktív) gomb stílusa */
+  .topic-btn-active {
+    @apply bg-green-950/60 border-green-500 text-green-400 shadow-[0_0_12px_rgba(34,197,94,0.15)];
+  }
+
+  /* Nem kiválasztott (inaktív) gombok stílusa */
+  .topic-btn-inactive {
+    @apply bg-black/50 border-neutral-800 text-neutral-400 hover:border-green-800 hover:text-green-500 hover:bg-green-950/20;
+  }
+
+  /* Alap stílus a megoldottság szűrőknek (kapszula forma) */
+  .filter-btn {
+    @apply px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 border flex items-center gap-2;
+  }
+
+  /* Aktív állapot */
+  .filter-btn-active {
+    @apply bg-green-950/60 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.15)];
+  }
+
+  /* Inaktív állapot */
+  .filter-btn-inactive {
+    @apply bg-black/50 border-neutral-800 text-neutral-400 hover:border-green-800 hover:text-green-500 hover:bg-green-950/20;
+  }
+}
