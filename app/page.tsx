@@ -70,7 +70,20 @@ export default function HomePage() {
       (filter === 'unsolved' && !isSolved)
 
     return matchesLevel && matchesTopic && matchesStatus
-  })
+  }).sort((a, b) => {
+    // 1. Lekérdezzük mindkét feladat megoldottsági állapotát
+    const isSolvedA = solvedIds.has(a.id);
+    const isSolvedB = solvedIds.has(b.id);
+
+    // 2. Ha A megoldott, de B nem, akkor A kerüljön előre (return -1)
+    if (isSolvedA && !isSolvedB) return -1;
+    // Ha B megoldott, de A nem, akkor B kerüljön előre (return 1)
+    if (!isSolvedA && isSolvedB) return 1;
+
+    // 3. Ha ugyanabban a státuszban vannak (mindkettő megoldott VAGY mindkettő megoldatlan), 
+    // akkor rendezzük őket az eredeti, időrendi sorrendbe (created_at szerint)
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen">
