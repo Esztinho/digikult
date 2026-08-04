@@ -4,6 +4,14 @@ import { createClient } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
+const TOPIC_FILTERS = [
+  { id: 'ALL', label: 'Összes kategória' },
+  { id: 'PYTHON_ALAPOK', label: 'Python alapok' },
+  { id: 'ALAP_ALGORITMUSOK', label: 'Alap algoritmusok' },
+  { id: 'LISTÁK', label: 'Listák' },
+  { id: 'FUGGVENYEK', label: 'Függvények' },
+]
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -109,36 +117,15 @@ export default function HomePage() {
 
       {/* 3. KATEGÓRIA VÁLASZTÓ GOMBOK (Topic-ok) */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <button 
-          onClick={() => setSelectedTopic('ALL')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            selectedTopic === 'ALL' 
-              ? 'bg-accent text-accent-foreground' 
-              : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
-          }`}
-        >
-          Összes kategória
-        </button>
-        <button 
-          onClick={() => setSelectedTopic('PYTHON_ALAPOK')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            selectedTopic === 'PYTHON_ALAPOK' 
-              ? 'bg-accent text-accent-foreground' 
-              : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
-          }`}
-        >
-          Python alapok
-        </button>
-        <button 
-          onClick={() => setSelectedTopic('ALAP_ALGORITMUSOK')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            selectedTopic === 'ALAP_ALGORITMUSOK' 
-              ? 'bg-accent text-accent-foreground' 
-              : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
-          }`}
-        >
-          Alap algoritmusok
-        </button>
+        {TOPIC_FILTERS.map((topic) => (
+          <button 
+            key={topic.id}
+            onClick={() => setSelectedTopic(topic.id)}
+            className={`topic-btn ${selectedTopic === topic.id ? 'topic-btn-active' : 'topic-btn-inactive'}`}
+          >
+            {topic.label}
+          </button>
+        ))}
       </div>
 
       {user && (
@@ -147,11 +134,7 @@ export default function HomePage() {
           {/* All tasks gomb */}
           <button 
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === 'all' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-            }`}
+            className={`filter-btn ${filter === 'all' ? 'filter-btn-active' : 'filter-btn-inactive'}`}
           >
             All tasks
           </button>
@@ -159,11 +142,7 @@ export default function HomePage() {
           {/* Unsolved gomb */}
           <button 
             onClick={() => setFilter('unsolved')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === 'unsolved' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-            }`}
+            className={`filter-btn ${filter === 'unsolved' ? 'filter-btn-active' : 'filter-btn-inactive'}`}
           >
             Unsolved
           </button>
@@ -171,13 +150,9 @@ export default function HomePage() {
           {/* Solved gomb */}
           <button 
             onClick={() => setFilter('solved')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
-              filter === 'solved' 
-                ? 'bg-success text-success-foreground' 
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-            }`}
+            className={`filter-btn ${filter === 'solved' ? 'filter-btn-active' : 'filter-btn-inactive'}`}
           >
-            Solved <span className={filter === 'solved' ? 'text-success-foreground' : 'text-success'}>✓</span>
+            Solved <span className={filter === 'solved' ? 'text-green-400' : 'text-neutral-500'}>✓</span>
           </button>
         </div>
       )}
