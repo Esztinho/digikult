@@ -10,6 +10,8 @@ const TOPIC_FILTERS = [
   { id: 'ALAP_ALGORITMUSOK', label: 'Alap algoritmusok' },
   { id: 'LISTÁK', label: 'Listák' },
   { id: 'FUGGVENYEK', label: 'Függvények' },
+  { id: 'SZÖVEGKEZELÉS', label: 'Szövegkezelés' },
+   { id: 'RENDEZÉS', label: 'Rendezés' },
 ]
 
 const supabase = createClient(
@@ -26,6 +28,31 @@ export default function HomePage() {
   const [filter, setFilter] = useState<'all' | 'solved' | 'unsolved'>('all')
   const [selectedLevel, setSelectedLevel] = useState<string>('KÖZÉP') // Alapból a középszint
   const [selectedTopic, setSelectedTopic] = useState<string>('ALL') 
+
+// 1. Kiszűrjük a feladatokat a kiválasztott szint alapján
+const targetQuestions = selectedLevel === 'KÖZÉP' 
+  ? questions.filter(q => q.level !== 'EMELT') // Középre nem kell az emelt
+  : questions; // Emeltre kell az összes (közép, emelt)
+
+// 2. Kiszámoljuk az összeset és a megoldottakat
+const totalQuestions = targetQuestions.length;
+const solvedCount = targetQuestions.filter(q => solvedIds.has(q.id)).length;
+
+// 3. Százalék számítás
+const progressPercentage = totalQuestions > 0 
+  ? Math.round((solvedCount / totalQuestions) * 100) 
+  : 0;
+
+// 4. Dinamikus színek a progress barhoz, hogy passzoljon a gombjaidhoz!
+const barColorClass = selectedLevel === 'KÖZÉP' 
+  ? 'bg-blue-600 shadow-[0_0_12px_#2563eb]' 
+  : 'bg-purple-600 shadow-[0_0_12px_#9333ea]';
+
+const textColorClass = selectedLevel === 'KÖZÉP' 
+  ? 'text-blue-500' 
+  : 'text-purple-500';
+
+  const [isTopicsOpen, setIsTopicsOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -87,7 +114,7 @@ export default function HomePage() {
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen">
-      {/* 1. FEJLÉC: Cím és Login adatok */}
+      {/* FEJLÉC: Cím és Login adatok */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold">Python Tasks</h1>
         
@@ -104,7 +131,7 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* 2. SZINT VÁLASZTÓ GOMBOK (Közép / Emelt) */}
+      {/* SZINT VÁLASZTÓ GOMBOK (Közép / Emelt) */}
       <div className="flex gap-3 mb-4">
         <button 
           onClick={() => setSelectedLevel('KÖZÉP')}
@@ -128,51 +155,115 @@ export default function HomePage() {
         </button>
       </div>
 
-      {/* 3. KATEGÓRIA VÁLASZTÓ GOMBOK (Topic-ok) */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {TOPIC_FILTERS.map((topic) => (
-          <button 
-            key={topic.id}
-            onClick={() => setSelectedTopic(topic.id)}
-            className={`topic-btn ${selectedTopic === topic.id ? 'topic-btn-active' : 'topic-btn-inactive'}`}
-          >
-            {topic.label}
-          </button>
-        ))}
-      </div>
+     {/* --- HALADÁSJELZŐ (PROGRESS BAR) --- */}
+<div className="w-full max-w-4xl mx-auto mb-10 p-4 bg-black/40 border border-green-500/20 rounded-lg shadow-lg">
+  
+  {/* Szöveges rész */}
+  <div className="flex justify-between items-end mb-3 font-mono">
+    <span className="text-green-500 text-sm tracking-wider uppercase animate-pulse">
+      Haladás: {selectedLevel === 'KÖZÉP' ? 'Közép szint' : 'Emelt szint'}
+    </span>
+    <span className="text-green-400 font-bold text-lg">
+      {solvedCount} / {totalQuestions} <span className="text-green-500/60 text-sm ml-1">({progressPercentage}%)</span>
+    </span>
+  </div>
 
-      {user && (
-        
-        <div className="flex flex-wrap gap-3 mb-8">
-          {/* All tasks gomb */}
-          <button 
-            onClick={() => setFilter('all')}
-            className={`filter-btn ${filter === 'all' ? 'filter-btn-active' : 'filter-btn-inactive'}`}
-          >
-            All tasks
-          </button>
-          
-          {/* Unsolved gomb */}
-          <button 
-            onClick={() => setFilter('unsolved')}
-            className={`filter-btn ${filter === 'unsolved' ? 'filter-btn-active' : 'filter-btn-inactive'}`}
-          >
-            Unsolved
-          </button>
-          
-          {/* Solved gomb */}
-          <button 
-            onClick={() => setFilter('solved')}
-            className={`filter-btn ${filter === 'solved' ? 'filter-btn-active' : 'filter-btn-inactive'}`}
-          >
-            Solved <span className={filter === 'solved' ? 'text-green-400' : 'text-neutral-500'}>✓</span>
-          </button>
+  {/* A tényleges csík (Külső sötét tartály) */}
+  <div className="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-green-900/50">
+    
+    {/* A kitöltődő neon-zöld rész */}
+    <div
+      className="h-full bg-green-500 transition-all duration-1000 ease-out shadow-[0_0_12px_#00ff00]"
+      style={{ width: `${progressPercentage}%` }}
+    ></div>
+    
+  </div>
+</div>
+{/* --- HALADÁSJELZŐ VÉGE --- */}
+
+      <div className="w-full mb-8 space-y-6">
+  
+  {/* VEZÉRLŐPULT (Szűrők és Témakörök) */}
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900/40 p-2 rounded-xl border border-zinc-800">
+    
+    {/* BAL OLDAL: Lenyitható Témakörök (Tartalomjegyzék) */}
+    <div className="relative w-full md:w-64">
+      <button 
+        onClick={() => setIsTopicsOpen(!isTopicsOpen)}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-colors border border-zinc-700"
+      >
+        <span className="truncate">
+          Témakör: {TOPIC_FILTERS.find(t => t.id === selectedTopic)?.label || 'Összes feladat'}
+        </span>
+        <svg 
+          className={`w-4 h-4 ml-2 text-zinc-400 transition-transform duration-200 ${isTopicsOpen ? 'rotate-180' : ''}`} 
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Lenyíló panel */}
+      {isTopicsOpen && (
+        <div className="absolute top-full left-0 mt-2 w-full bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden">
+          <div className="max-h-64 overflow-y-auto p-1 flex flex-col gap-1">
+            {TOPIC_FILTERS.map((topic) => (
+              <button 
+                key={topic.id}
+                onClick={() => {
+                  setSelectedTopic(topic.id);
+                  setIsTopicsOpen(false);
+                }}
+                className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                  selectedTopic === topic.id 
+                    ? 'bg-primary text-primary-foreground font-medium' 
+                    : 'text-zinc-300 hover:bg-zinc-700'
+                }`}
+              >
+                {topic.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
+    </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredQuestions.map((q) => {
-          const isSolved = solvedIds.has(q.id)
+    {/* JOBB OLDAL: Állapot szűrők (Szegmentált gombok) */}
+    {user && (
+      <div className="flex bg-zinc-950/50 p-1 rounded-lg border border-zinc-800/50">
+        <button 
+          onClick={() => setFilter('all')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+            filter === 'all' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          Összes
+        </button>
+        <button 
+          onClick={() => setFilter('unsolved')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+            filter === 'unsolved' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          Megoldandó
+        </button>
+        <button 
+          onClick={() => setFilter('solved')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+            filter === 'solved' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          Megoldva <span className={filter === 'solved' ? 'text-emerald-400' : 'text-zinc-600'}>✓</span>
+        </button>
+      </div>
+    )}
+  </div>
+</div>
+
+{/* FELADAT KÁRTYÁK GRID */}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+  {filteredQuestions.map((q) => {
+    const isSolved = solvedIds.has(q.id);
 
           return (
             <Link href={`/feladat/${q.id}`} key={q.id}>
