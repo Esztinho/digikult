@@ -19,6 +19,19 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+const getTaskType = (question: any): 'predict' | 'code' => {
+  const rawTaskType = String(
+    question?.task_type ?? question?.type ?? question?.question_type ?? ''
+  ).toLowerCase()
+
+  const isPredict =
+    rawTaskType.includes('predict') ||
+    rawTaskType.includes('output') ||
+    Boolean(question?.expected_output ?? question?.expectedOutput)
+
+  return isPredict ? 'predict' : 'code'
+}
+
 export default function HomePage() {
   const [questions, setQuestions] = useState<any[]>([])
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set())
@@ -28,6 +41,7 @@ export default function HomePage() {
   const [filter, setFilter] = useState<'all' | 'solved' | 'unsolved'>('all')
   const [selectedLevel, setSelectedLevel] = useState<string>('KÖZÉP') // Alapból a középszint
   const [selectedTopic, setSelectedTopic] = useState<string>('ALL') 
+  const [selectedTaskType, setSelectedTaskType] = useState<'ALL' | 'PREDICT' | 'CODE'>('ALL')
 
 // 1. Kiszűrjük a feladatokat a kiválasztott szint alapján
 const targetQuestions = selectedLevel === 'KÖZÉP' 
@@ -87,8 +101,12 @@ const textColorClass = selectedLevel === 'KÖZÉP'
 
   const filteredQuestions = questions.filter(q => {
     const matchesLevel = q.level === selectedLevel
-
     const matchesTopic = selectedTopic === 'ALL' || q.topic === selectedTopic
+    const isPredictTask = getTaskType(q) === 'predict'
+    const matchesTaskType =
+      selectedTaskType === 'ALL' ||
+      (selectedTaskType === 'PREDICT' && isPredictTask) ||
+      (selectedTaskType === 'CODE' && !isPredictTask)
 
     const isSolved = solvedIds.has(q.id)
     const matchesStatus = 
@@ -96,7 +114,7 @@ const textColorClass = selectedLevel === 'KÖZÉP'
       (filter === 'solved' && isSolved) || 
       (filter === 'unsolved' && !isSolved)
 
-    return matchesLevel && matchesTopic && matchesStatus
+    return matchesLevel && matchesTopic && matchesTaskType && matchesStatus
   }).sort((a, b) => {
     // 1. Lekérdezzük mindkét feladat megoldottsági állapotát
     const isSolvedA = solvedIds.has(a.id);
@@ -132,7 +150,7 @@ const textColorClass = selectedLevel === 'KÖZÉP'
       </div>
 
       {/* SZINT VÁLASZTÓ GOMBOK (Közép / Emelt) */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex flex-wrap gap-3 mb-4">
         <button 
           onClick={() => setSelectedLevel('KÖZÉP')}
           className={`px-5 py-2 rounded-xl font-bold transition-all ${
@@ -153,6 +171,28 @@ const textColorClass = selectedLevel === 'KÖZÉP'
         >
           Emelt szint
         </button>
+      </div>
+
+      <div className="flex flex-wrap gap-3 mb-6">
+        {['ALL', 'PREDICT', 'CODE'].map((type) => {
+          const isActive = selectedTaskType === type
+          const label =
+            type === 'ALL' ? 'Összes típus' : type === 'PREDICT' ? 'Elemzés' : 'Kódolás'
+
+          return (
+            <button
+              key={type}
+              onClick={() => setSelectedTaskType(type as 'ALL' | 'PREDICT' | 'CODE')}
+              className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                isActive
+                  ? 'bg-emerald-600 text-white shadow-lg'
+                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+              }`}
+            >
+              {label}
+            </button>
+          )
+        })}
       </div>
 
      {/* --- HALADÁSJELZŐ (PROGRESS BAR) --- */}
@@ -264,6 +304,8 @@ const textColorClass = selectedLevel === 'KÖZÉP'
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
   {filteredQuestions.map((q) => {
     const isSolved = solvedIds.has(q.id);
+    const taskType = getTaskType(q)
+    const taskTypeLabel = taskType === 'predict' ? 'Predict' : 'Coding'
 
           return (
             <Link href={`/feladat/${q.id}`} key={q.id}>
@@ -277,9 +319,16 @@ const textColorClass = selectedLevel === 'KÖZÉP'
                   </div>
                 )}
 
-                <div className="mb-4">
+                <div className="mb-4 flex items-center justify-between gap-2">
                   <span className="bg-primary/10 text-primary text-xs font-semibold px-2 py-1 rounded-full uppercase tracking-wider">
                     {q.topic}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${
+                    taskType === 'predict'
+                      ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                      : 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+                  }`}>
+                    {taskTypeLabel}
                   </span>
                 </div>
                 

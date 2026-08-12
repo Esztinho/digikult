@@ -4,8 +4,9 @@ import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { useEffect, useState, use } from 'react'
 import Script from 'next/script'
-
 import dynamic from 'next/dynamic'
+
+import OutputPredictor from '../../../components/OutputPredictor'
 
 // Dinamikusan töltjük be a Monacót, letiltva az SSR-t (szerveroldali renderelést)
 const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
@@ -158,6 +159,29 @@ sys.stdout = io.StringIO()
 
   if (!question) return <div className="p-8 text-center mt-20 text-red-500">Task not found!</div>
 
+  const rawTaskType = String(
+    question?.task_type ?? question?.type ?? question?.question_type ?? ''
+  ).toLowerCase()
+
+  const isPredictTask =
+    rawTaskType.includes('predict') ||
+    rawTaskType.includes('output') ||
+    Boolean(question?.expected_output ?? question?.expectedOutput)
+
+  const predictorTask = {
+    id: String(question.id),
+    topic: String(question.topic ?? 'Python'),
+    title: String(question.title ?? 'Feladat'),
+    description: String(question.description ?? ''),
+    codeSnippet: String(question.code_snippet ?? question.codeSnippet ?? question.code ?? ''),
+    expectedOutput: String(question.expected_output ?? question.expectedOutput ?? '').trim(),
+    hint: question.hint ? String(question.hint) : undefined,
+  }
+
+  if (isPredictTask) {
+    return <OutputPredictor task={predictorTask} />
+  }
+
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen flex flex-col">
       <Script 
@@ -200,7 +224,7 @@ sys.stdout = io.StringIO()
 
       <div className="flex justify-between items-center mb-6">
         <Link href="/" className="text-muted-foreground hover:text-primary">
-          ← Back to tasks
+          ← Vissza a feladatokhoz
         </Link>
         {user && <span className="text-sm text-green-500 border border-green-900 bg-green-950/30 px-3 py-1 rounded-full">Logged in as: {user.email}</span>}
       </div>
