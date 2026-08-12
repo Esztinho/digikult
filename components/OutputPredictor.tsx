@@ -1,20 +1,44 @@
 'use client';
 
 import React, { useState } from 'react';
+import { createClient } from '@supabase/supabase-js'; // Supabase kliens
 import Link from 'next/link';
-import { PredictorTask } from '../types';
 
-export default function OutputPredictor({ task }: { task: PredictorTask }) {
+// Inicializáljuk a klienst 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export default function OutputPredictor({ task }: { task: any }) {
   const [inputValue, setInputValue] = useState('');
   const [status, setStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
   const [showHint, setShowHint] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Átírjuk a handleSubmit-et aszinkronra, hogy tudjunk adatbázisba írni
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // A trim() eltávolítja a véletlen szóközöket a diák válaszának elejéről/végéről
-    if (inputValue.trim() === task.expectedOutput) {
+    if (inputValue.trim() === task.expectedOutput.trim()) {
       setStatus('correct');
+      
+      // 1. Lekérjük a jelenlegi felhasználót
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // 2. Ha be van jelentkezve, elmentjük a haladást a user_progress táblába
+      if (user) {
+        await supabase
+          .from('user_progress')
+          .insert([
+            { 
+              user_id: user.id, 
+              question_id: task.id 
+            }
+          ])
+          // A upsert jó ötlet lehet, ha esetleg már próbálta korábban, hogy ne dobjon hibát
+          // .upsert([{ user_id: user.id, question_id: task.id }]); 
+      }
+      
     } else {
       setStatus('incorrect');
     }
